@@ -67,17 +67,25 @@ module Moon
       end
       private :format_context
 
-      # Most basic function for the logger, writes a new log line.
+      # Adds timestamp information to the provided data
+      #
+      # @param [Hash<Symbol, Object>] data  to add timestamp to
+      # @return [Hash] data given
+      def timestamp_context(data)
+        t = Time.now
+        fmt = '%04d-%02d-%02dT%02d:%02d:%02d%s'
+        s = sprintf(fmt, t.year, t.mon, t.day, t.hour, t.min, t.sec, t.zone)
+        data[:now] = s
+        data
+      end
+      private :timestamp_context
+
+      # Writes a new log line
       #
       # @param [Hash<[String, Symbol], String>] data
       def write(data)
         pre = {}
-        if @timestamp
-          t = Time.now
-          fmt = '%04d-%02d-%02dT%02d:%02d:%02d%s'
-          s = sprintf(fmt, t.year, t.mon, t.day, t.hour, t.min, t.sec, t.zone)
-          pre[:now] = s
-        end
+        timestamp_context(pre) if @timestamp
         @io.puts format_context(pre.merge(context.merge(data)))
       end
 
