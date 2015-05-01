@@ -52,6 +52,8 @@ module Moon
       # @param [Logfmt::Logger] org
       # @return [self]
       def initialize_copy(org)
+        @io = org.io
+        @timestamp = org.timestamp
         @context = org.context.dup
         self
       end
