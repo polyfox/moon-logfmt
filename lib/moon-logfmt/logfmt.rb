@@ -93,9 +93,7 @@ module Moon
       #
       # @param [Hash<[Symbol, String], String>] data
       def new(data)
-        logger = dup
-        logger.context.merge!(data)
-        logger
+        dup.tap { |l| l.context.merge!(data) }
       end
     end
 
