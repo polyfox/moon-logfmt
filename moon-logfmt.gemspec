@@ -4,7 +4,7 @@ Gem::Specification.new do |s|
   s.name        = 'moon-logfmt'
   s.summary     = 'An implementation of Logfmt encoding.'
   s.description = 'An implementation of Logfmt encoding in ruby.'
-  s.homepage    = 'https://github.com/IceDragon200/moon-logfmt'
+  s.homepage    = 'https://github.com/polyfox/moon-logfmt'
   s.email       = 'mistdragon100@gmail.com'
   s.version     = Moon::Logfmt::Version::STRING
   s.platform    = Gem::Platform::RUBY
