@@ -3,6 +3,22 @@ require 'moon-null_io/null_io'
 module Moon
   # Implementation of logfmt for Moon
   module Logfmt
+    # Logging severity.
+    module Severity
+      # Low-level information, mostly for developers.
+      DEBUG = 0
+      # Generic (useful) information about system operation.
+      INFO = 1
+      # A warning.
+      WARN = 2
+      # A handleable error condition.
+      ERROR = 3
+      # An unhandleable error that results in a program crash.
+      FATAL = 4
+      # An unknown message that should always be logged.
+      UNKNOWN = 5
+    end
+
     # Regular expression used for checking strings that may need escaping.
     # This regular expression will validate true if the string doesn't need
     # escaping.
@@ -30,6 +46,8 @@ module Moon
     # The main functions are #write and #new
     # #new will copy the current logger and append its context data
     class Logger
+      include Severity
+
       # The underlaying IO to write to, the default is STDOUT
       # @return [IO, #puts]
       attr_accessor :io
@@ -62,23 +80,21 @@ module Moon
       #
       # @param [Hash<[String, Symbol], String>] data
       # @return [String]
-      def format_context(data)
+      private def format_context(data)
         Logfmt.format_context data
       end
-      private :format_context
 
       # Adds timestamp information to the provided data
       #
       # @param [Hash<Symbol, Object>] data  to add timestamp to
       # @return [Hash] data given
-      def timestamp_context(data)
+      private def timestamp_context(data)
         t = Time.now
         fmt = '%04d-%02d-%02dT%02d:%02d:%02d%s'
         s = sprintf(fmt, t.year, t.mon, t.day, t.hour, t.min, t.sec, t.zone)
         data[:now] = s
         data
       end
-      private :timestamp_context
 
       # Writes a new log line
       #
@@ -88,6 +104,70 @@ module Moon
         timestamp_context(pre) if @timestamp
         @io.puts format_context(pre.merge(context.merge(data)))
       end
+
+      # @!group std Logger interface
+      # @param [Severity] severity
+      # @param [String, nil] message
+      # @param [String, nil] progname
+      # @yieldreturn [String] message
+      def add(severity, message = nil, progname = nil, &block)
+        message = message || (block && block.call)
+        msg = message || progname
+        data = {}
+        data[:progname] = progname if progname && message
+        data[case severity
+          when DEBUG then :debug
+          when ERROR then :error
+          when FATAL then :fatal
+          when INFO then :msg
+          when UNKNOWN then :msg
+          when WARN then :warn
+          end] = msg
+        write data
+      end
+      alias :log :add
+
+      # Logs a message
+      #
+      # @overload info(message)
+      #   @param [String] message
+      # @overload info(progname, &block)
+      #   @param [String] progname
+      #   @yieldreturn [String] message
+      def info(progname = nil, &block)
+        add(INFO, nil, progname, &block)
+      end
+
+      # See {#info} for more information.
+      # (see #info)
+      def debug(progname = nil, &block)
+        add(DEBUG, nil, progname, &block)
+      end
+
+      # See {#info} for more information.
+      # (see #info)
+      def error(progname = nil, &block)
+        add(ERROR, nil, progname, &block)
+      end
+
+      # See {#info} for more information.
+      # (see #info)
+      def fatal(progname = nil, &block)
+        add(FATAL, nil, progname, &block)
+      end
+
+      # See {#info} for more information.
+      # (see #info)
+      def unknown(progname = nil, &block)
+        add(UNKNOWN, nil, progname, &block)
+      end
+
+      # See {#info} for more information.
+      # (see #info)
+      def warn(progname = nil, &block)
+        add(WARN, nil, progname, &block)
+      end
+      # @!endgroup
 
       # Creates a new context by forking the current logger
       #
