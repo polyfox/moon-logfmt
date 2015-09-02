@@ -24,13 +24,14 @@ module Moon
     # escaping.
     UNESCAPED_STRING = /\A[a-zA-Z0-9\.\-\_\,\:\;\/]*\z/i
 
-    # Formats provided data in a logfmt format.
+    # Escapes the context values and yields the result.
     #
     # @param [Hash<[String, Symbol], String>] data
-    # @return [String]
-    def self.format_context(data)
-      data.map do |pair|
-        key, value = *pair
+    # @yieldparam [String] key
+    # @yieldparam [String] value
+    def self.escape_context_data(data)
+      return to_enum :escape_context_data, data unless block_given?
+      data.each_pair do |key, value|
         case value
         when Array
           value = value.join(',')
@@ -38,9 +39,11 @@ module Moon
           value = value.to_s
         end
         value = value.dump unless value =~ UNESCAPED_STRING
-        "#{key}=#{value}"
-      end.join(' ')
+        yield key.to_s, value
+      end
     end
+
+    FORMATTER = ->(key, value) { "#{key}=#{value}" }
 
     # Basic Logger class for Logfmt writing
     # The main functions are #write and #new
@@ -51,9 +54,15 @@ module Moon
       # The underlaying IO to write to, the default is STDOUT
       # @return [IO, #puts]
       attr_accessor :io
+
+      # A function which takes a key and value string and produces a string
+      # @return [Proc]
+      attr_accessor :formatter
+
       # Whether to prepend timestamps to the logs
       # @return [Boolean]
       attr_accessor :timestamp
+
       # Context related data, this protected, don't even think of using it.
       # @return [Hash<[String, Symbol], String>]
       attr_accessor :context
@@ -63,6 +72,7 @@ module Moon
       # @param [Hash<[String, Symbol], String>] data
       def initialize(data = {})
         @io = STDOUT
+        @formatter = FORMATTER
         @context = data
         @timestamp = true
       end
@@ -73,6 +83,7 @@ module Moon
         @io = org.io
         @timestamp = org.timestamp
         @context = org.context.dup
+        @formatter = org.formatter
         self
       end
 
@@ -81,7 +92,11 @@ module Moon
       # @param [Hash<[String, Symbol], String>] data
       # @return [String]
       private def format_context(data)
-        Logfmt.format_context data
+        str = []
+        Logfmt.escape_context_data data do |key, value|
+          str << @formatter.call(key, value)
+        end
+        str.join(' ')
       end
 
       # Adds timestamp information to the provided data
