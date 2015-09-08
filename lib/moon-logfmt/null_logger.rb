@@ -1,3 +1,4 @@
+require 'moon-null_io/null_io'
 require 'moon-logfmt/logger'
 
 module Moon
