@@ -22,7 +22,7 @@ module Moon
     # Regular expression used for checking strings that may need escaping.
     # This regular expression will validate true if the string doesn't need
     # escaping.
-    UNESCAPED_STRING = /\A[a-zA-Z0-9\.\-\_\,\:\;\/]*\z/i
+    UNESCAPED_STRING = /\A[\w\.\-\+\%\_\,\:\;\/]*\z/i
 
     # Escapes the context values and yields the result.
     #
