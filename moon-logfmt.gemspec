@@ -12,12 +12,12 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
   s.authors     = ['Blaž Hrastnik', 'Corey Powell']
 
-  s.add_dependency             'moon-null_io',  '~> 1.0'
-  s.add_development_dependency 'rake',          '~> 10.3'
-  s.add_development_dependency 'rubocop', '~> 0.27'
-  s.add_development_dependency 'guard',   '~> 2.8'
-  s.add_development_dependency 'yard',    '~> 0.8'
-  s.add_development_dependency 'rspec',   '~> 3.2'
+  s.add_dependency             'moon-null_io',  ['>= 1.0.1', '~> 1.0']
+  s.add_development_dependency 'rake',          '>= 11.0'
+  s.add_development_dependency 'rubocop',       '~> 0.27'
+  s.add_development_dependency 'guard',         '~> 2.8'
+  s.add_development_dependency 'yard',          '~> 0.8'
+  s.add_development_dependency 'rspec',         '~> 3.2'
   s.add_development_dependency 'codeclimate-test-reporter'
   s.add_development_dependency 'simplecov'
 
