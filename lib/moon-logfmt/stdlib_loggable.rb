@@ -1,54 +1,55 @@
+require 'moon-logfmt/severity'
+
 module Moon
   module Logfmt
-    # Logging severity.
-    module Severity
-      # Low-level information, mostly for developers.
-      DEBUG = 0
-      # Generic (useful) information about system operation.
-      INFO = 1
-      # A warning.
-      WARN = 2
-      # A handleable error condition.
-      ERROR = 3
-      # An unhandleable error that results in a program crash.
-      FATAL = 4
-      # An unknown message that should always be logged.
-      UNKNOWN = 5
-    end
-
     # Interface for the stdlib Logger class
     module StdlibLoggable
       include Severity
 
+      # @param [Integer] severity
+      # @return [Symbol]
+      private def severity_to_symbol(severity)
+        case severity
+        when DEBUG   then :debug
+        when INFO    then :info
+        when WARN    then :warn
+        when ERROR   then :error
+        when FATAL   then :fatal
+        when UNKNOWN then :unknown
+        else
+          severity.to_s
+        end
+      end
+
       # @!group std Logger interface
+
+      # Adds a new logger message
+      #
       # @param [Severity] severity
       # @param [String, nil] message
       # @param [String, nil] progname
       # @yieldreturn [String] message
       def add(severity, message = nil, progname = nil, &block)
+        return if severity < @level
         message = message || (block && block.call)
         msg = message || progname
         data = {}
         data[:progname] = progname if progname && message
-        data[case severity
-          when DEBUG then :debug
-          when ERROR then :error
-          when FATAL then :fatal
-          when INFO then :msg
-          when UNKNOWN then :msg
-          when WARN then :warn
-          end] = msg
+        data[:level] = severity_to_symbol(severity)
+        msg.is_a?(Hash) ? data.merge!(msg) : data.store(:msg, msg)
         write data
       end
       alias :log :add
 
       # Logs a message
       #
+      # @overload info(data)
+      #   @param [Hash] data - data to log
       # @overload info(message)
-      #   @param [String] message
+      #   @param [String] message - message to log
       # @overload info(progname, &block)
-      #   @param [String] progname
-      #   @yieldreturn [String] message
+      #   @param [String] progname - program name
+      #   @yieldreturn [String] message - message to log
       def info(progname = nil, &block)
         add(INFO, nil, progname, &block)
       end

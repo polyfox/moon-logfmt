@@ -1,5 +1,6 @@
 require 'moon-logfmt/stdlib_loggable'
 require 'moon-logfmt/formatter'
+require 'moon-logfmt/utils'
 
 module Moon
   module Logfmt
@@ -33,12 +34,21 @@ module Moon
         @formatter = FORMATTER
         @context = data
         @timestamp = true
+        @level = Moon::Logfmt::Severity::DEBUG
+      end
+
+      attr_reader :level
+
+      # @param [Symbol]
+      def level=(lvl)
+        @level = Moon::Logfmt.determine_loglevel_from_object(lvl)
       end
 
       # @param [Logfmt::Logger] org
       # @return [self]
       def initialize_copy(org)
         @io = org.io
+        @level = org.level
         @timestamp = org.timestamp
         @context = org.context.dup
         @formatter = org.formatter
