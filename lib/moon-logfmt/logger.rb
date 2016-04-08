@@ -9,12 +9,21 @@ module Moon
     # #new will copy the current logger and append its context data
     class Logger
       include StdlibLoggable
+      include Severity
+
+      # The default datetime string format
+      # @return [String]
+      DEFAULT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%Z'.freeze
 
       # The underlaying IO to write to, the default is STDOUT
       # @return [IO, #puts]
       attr_accessor :io
 
       # A function which takes a key and value string and produces a string
+      # @return [Proc]
+      attr_accessor :key_value_formatter
+
+      # A function which takes the final context string and formats it
       # @return [Proc]
       attr_accessor :formatter
 
@@ -31,10 +40,12 @@ module Moon
       # @param [Hash<[String, Symbol], String>] data
       def initialize(data = {})
         @io = STDOUT
-        @formatter = FORMATTER
+        @formatter = Formatter.default
+        @key_value_formatter = KeyValueFormatter.default
         @context = data
         @timestamp = true
         @level = Moon::Logfmt::Severity::DEBUG
+        @datetime_format = DEFAULT_DATETIME_FORMAT
       end
 
       attr_reader :level
@@ -52,19 +63,23 @@ module Moon
         @timestamp = org.timestamp
         @context = org.context.dup
         @formatter = org.formatter
+        @key_value_formatter = org.key_value_formatter
         self
       end
 
-      # Formats the provided context data
-      #
-      # @param [Hash<[String, Symbol], String>] data
-      # @return [String]
-      private def format_context(data)
-        str = []
-        Logfmt.escape_context_data data do |key, value|
-          str << @formatter.call(key, value)
+      # @param [Integer] severity
+      # @return [Symbol]
+      private def severity_to_symbol(severity)
+        case severity
+        when DEBUG   then :debug
+        when INFO    then :info
+        when WARN    then :warn
+        when ERROR   then :error
+        when FATAL   then :fatal
+        when UNKNOWN then :unknown
+        else
+          severity.to_s
         end
-        str.join(' ')
       end
 
       # Adds timestamp information to the provided data
@@ -72,20 +87,44 @@ module Moon
       # @param [Hash<Symbol, Object>] data  to add timestamp to
       # @return [Hash] data given
       private def timestamp_context(data)
-        t = Time.now
-        fmt = '%04d-%02d-%02dT%02d:%02d:%02d%s'
-        s = sprintf(fmt, t.year, t.mon, t.day, t.hour, t.min, t.sec, t.zone)
-        data[:now] = s
-        data
+        data.tap { |d| d[:now] = Time.now.strftime(@datetime_format) }
+      end
+
+      # Formats the provided context data
+      #
+      # @param [Hash<[String, Symbol], String>] data
+      # @return [String]
+      private def format_context(severity, time, progname, ctx)
+        data = {}
+        data[:level] = severity_to_symbol(severity) if severity
+        timestamp_context(data) if @timestamp
+        data[:progname] = progname if progname
+        data.merge!(ctx)
+        str = []
+        Logfmt.escape_context_data data do |key, value|
+          str << @key_value_formatter.call(key, value)
+        end
+        @formatter.call(severity, time, progname, str.join(' '))
+      end
+
+      protected def write_to_logdev(str)
+        @io.puts str
+      end
+
+      # Writes a new context line to the logdev
+      # @param [Integer] severity
+      # @param [Time] time
+      # @param [String] progname
+      # @param [Hash] ctx
+      protected def write_context(severity, time, progname, ctx)
+        write_to_logdev format_context(severity, time, progname, context.merge(ctx))
       end
 
       # Writes a new log line
       #
       # @param [Hash<[String, Symbol], String>] data
       def write(data)
-        pre = {}
-        timestamp_context(pre) if @timestamp
-        @io.puts format_context(pre.merge(context.merge(data)))
+        write_context nil, Time.now, nil, data
       end
 
       # Creates a new context by forking the current logger

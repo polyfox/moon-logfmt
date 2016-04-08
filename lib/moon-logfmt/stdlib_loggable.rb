@@ -6,21 +6,6 @@ module Moon
     module StdlibLoggable
       include Severity
 
-      # @param [Integer] severity
-      # @return [Symbol]
-      private def severity_to_symbol(severity)
-        case severity
-        when DEBUG   then :debug
-        when INFO    then :info
-        when WARN    then :warn
-        when ERROR   then :error
-        when FATAL   then :fatal
-        when UNKNOWN then :unknown
-        else
-          severity.to_s
-        end
-      end
-
       # @!group std Logger interface
 
       # Adds a new logger message
@@ -34,10 +19,8 @@ module Moon
         message = message || (block && block.call)
         msg = message || progname
         data = {}
-        data[:progname] = progname if progname && message
-        data[:level] = severity_to_symbol(severity)
         msg.is_a?(Hash) ? data.merge!(msg) : data.store(:msg, msg)
-        write data
+        write_context(severity, Time.now, progname, data)
       end
       alias :log :add
 
