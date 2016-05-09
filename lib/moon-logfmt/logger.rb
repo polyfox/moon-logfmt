@@ -9,7 +9,6 @@ module Moon
     # #new will copy the current logger and append its context data
     class Logger
       include StdlibLoggable
-      include Severity
 
       # The default datetime string format
       # @return [String]
@@ -67,21 +66,6 @@ module Moon
         self
       end
 
-      # @param [Integer] severity
-      # @return [Symbol]
-      private def severity_to_symbol(severity)
-        case severity
-        when DEBUG   then :debug
-        when INFO    then :info
-        when WARN    then :warn
-        when ERROR   then :error
-        when FATAL   then :fatal
-        when UNKNOWN then :unknown
-        else
-          severity.to_s
-        end
-      end
-
       # Adds timestamp information to the provided data
       #
       # @param [Hash<Symbol, Object>] data  to add timestamp to
@@ -95,16 +79,20 @@ module Moon
       # @param [Hash<[String, Symbol], String>] data
       # @return [String]
       private def format_context(severity, time, progname, ctx)
-        data = {}
-        data[:level] = severity_to_symbol(severity) if severity
-        timestamp_context(data) if @timestamp
-        data[:progname] = progname if progname
-        data.merge!(ctx)
         str = []
-        Logfmt.escape_context_data data do |key, value|
+        Moon::Logfmt.escape_context_data ctx do |key, value|
           str << @key_value_formatter.call(key, value)
         end
         @formatter.call(severity, time, progname, str.join(' '))
+      end
+
+      private def transform_context(severity, time, progname, ctx)
+        data = {}
+        data[:level] = Moon::Logfmt.loglevel_to_symbol(severity) if severity
+        timestamp_context(data) if @timestamp
+        data[:progname] = progname if progname
+        data.merge!(context.merge(ctx))
+        data
       end
 
       protected def write_to_logdev(str)
@@ -117,7 +105,8 @@ module Moon
       # @param [String] progname
       # @param [Hash] ctx
       protected def write_context(severity, time, progname, ctx)
-        write_to_logdev format_context(severity, time, progname, context.merge(ctx))
+        result_ctx = transform_context(severity, time, progname, ctx)
+        write_to_logdev format_context(severity, time, progname, result_ctx)
       end
 
       # Writes a new log line

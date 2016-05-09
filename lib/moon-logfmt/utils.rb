@@ -45,6 +45,21 @@ module Moon
       end
     end
 
+    # @param [Integer] loglevel
+    # @return [Symbol]
+    def self.loglevel_to_symbol(loglevel)
+      case loglevel
+      when Moon::Logfmt::Severity::DEBUG   then :debug
+      when Moon::Logfmt::Severity::INFO    then :info
+      when Moon::Logfmt::Severity::WARN    then :warn
+      when Moon::Logfmt::Severity::ERROR   then :error
+      when Moon::Logfmt::Severity::FATAL   then :fatal
+      when Moon::Logfmt::Severity::UNKNOWN then :unknown
+      else
+        loglevel.to_s
+      end
+    end
+
     # (see Moon::Logfmt::Logger#initialize)
     def self.new(*args, &block)
       Moon::Logfmt::Logger.new(*args, &block)
