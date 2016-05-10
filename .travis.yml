@@ -5,7 +5,7 @@ addons:
     repo_token: 5ba7d6723270d118185043e817715b7bea4002877c9bffea3ce317bd54d5a1a8
 rvm:
 - 2.2.3
-- 2.3
+- 2.3.0
 - ruby-head
 matrix:
   allow_failures:
