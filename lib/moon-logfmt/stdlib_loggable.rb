@@ -16,8 +16,15 @@ module Moon
       # @yieldreturn [String] message
       def add(severity, message = nil, progname = nil, &block)
         return if severity < @level
-        message = message || (block && block.call)
-        msg = message || progname
+        msg = if block_given?
+          block.call
+        elsif message
+          message
+        else
+          tmp = progname
+          progname = nil
+          tmp
+        end
         data = {}
         msg.is_a?(Hash) ? data.merge!(msg) : data.store(:msg, msg)
         write_context(severity, Time.now, progname, data)
