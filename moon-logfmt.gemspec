@@ -1,5 +1,5 @@
-require_relative 'lib/moon-logfmt/version'
 require 'date'
+require_relative 'lib/moon-logfmt/version'
 
 Gem::Specification.new do |s|
   s.name        = 'moon-logfmt'
